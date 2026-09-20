@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Facial Expression to Animation System</title>
+  <meta name="description" content="Real-time facial expression + teeth detection and 3D animation system using MediaPipe Face Mesh" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<header>
+  <div class="header-title">Facial&#8209;Expression to Animation System</div>
+  <div class="header-sub">Real&#8209;Time &nbsp;·&nbsp; Detect &nbsp;·&nbsp; Teeth &nbsp;·&nbsp; Analyze &nbsp;·&nbsp; Animate</div>
+</header>
+
+<div class="pipeline">
+
+  <!-- Step 1 Webcam -->
+  <div class="step-panel">
+    <div class="step-num">1</div>
+    <div class="step-title">Webcam Input</div>
+    <div class="step-sub">Real&#8209;time face capture</div>
+    <div id="webcam-container">
+      <video id="webcamVideo" autoplay playsinline muted></video>
+      <canvas id="overlayCanvas"></canvas>
+      <div class="scan-line"></div>
+      <div class="corner corner-tl"></div><div class="corner corner-tr"></div>
+      <div class="corner corner-bl"></div><div class="corner corner-br"></div>
+    </div>
+    <button id="startBtn">&#9654; Start Camera</button>
+    <div style="font-size:10px;margin-top:6px;text-align:center;">
+      <span class="status-dot off" id="statusDot"></span>
+      <span id="statusText" style="color:var(--dim);font-family:'Share Tech Mono',monospace;font-size:9px;">OFFLINE</span>
+    </div>
+  </div>
+
+  <!-- Step 2 Landmarks -->
+  <div class="step-panel">
+    <div class="step-num">2</div>
+    <div class="step-title">Facial Landmark Detection</div>
+    <div class="step-sub">Face mesh &amp; keypoints</div>
+    <div class="landmark-canvases">
+      <canvas id="meshCanvas"></canvas>
+      <canvas id="eyeCanvas" class="sub-canvas"></canvas>
+      <canvas id="mouthCanvas" class="sub-canvas"></canvas>
+    </div>
+    <div style="font-size:10px;color:var(--dim);margin-top:6px;font-family:'Share Tech Mono',monospace;">
+      LANDMARKS: <span id="landmarkCount" style="color:var(--primary)">0</span> / 468 &nbsp;·&nbsp;
+      FPS: <span id="fpsCount" style="color:var(--primary)">0</span> &nbsp;·&nbsp;
+      TEETH: <span id="teethStatus" style="color:#888">—</span>
+    </div>
+  </div>
+
+  <!-- Step 3 Expression Parameters -->
+  <div class="step-panel">
+    <div class="step-num">3</div>
+    <div class="step-title">Expression Parameters</div>
+    <div class="step-sub">Values &amp; Blendshape Mapping</div>
+    <div class="expr-params">
+      <div class="param-row">
+        <span class="param-label">Eye Openness</span>
+        <div class="param-bar-bg"><div class="param-bar" id="b-eye" style="width:0%"></div></div>
+        <span class="param-val" id="v-eye">0.00</span>
+      </div>
+      <div class="param-row">
+        <span class="param-label">Eyebrow Raise</span>
+        <div class="param-bar-bg"><div class="param-bar" id="b-brow" style="width:0%"></div></div>
+        <span class="param-val" id="v-brow">0.00</span>
+      </div>
+      <div class="param-row">
+        <span class="param-label">Eyebrow Furrow</span>
+        <div class="param-bar-bg"><div class="param-bar" id="b-furrow" style="width:0%"></div></div>
+        <span class="param-val" id="v-furrow">0.00</span>
+      </div>
+      <div class="param-row">
+        <span class="param-label">Mouth Open</span>
+        <div class="param-bar-bg"><div class="param-bar" id="b-mouth" style="width:0%"></div></div>
+        <span class="param-val" id="v-mouth">0.00</span>
+      </div>
+      <div class="param-row">
+        <span class="param-label">Smile</span>
+        <div class="param-bar-bg"><div class="param-bar" id="b-smile" style="width:0%"></div></div>
+        <span class="param-val" id="v-smile">0.00</span>
+      </div>
+      <div class="param-row">
+        <span class="param-label">Jaw Drop</span>
+        <div class="param-bar-bg"><div class="param-bar" id="b-jaw" style="width:0%"></div></div>
+        <span class="param-val" id="v-jaw">0.00</span>
+      </div>
+      <!-- TEETH PARAMETER -->
+      <div class="param-row">
+        <span class="param-label" style="color:#aaccee;">&#9654; Teeth Visible</span>
+        <div class="param-bar-bg"><div class="param-bar teeth-bar" id="b-teeth" style="width:0%"></div></div>
+        <span class="param-val teeth-val" id="v-teeth">0.00</span>
+      </div>
+
+      <div class="blendshape-title">BLENDSHAPE MAPPING</div>
+      <div class="blend-row">
+        <span class="blend-label">eyeBlink_L</span>
+        <div class="blend-bar-bg"><div class="blend-bar" id="bs-blinkL" style="width:0%"></div></div>
+        <span class="blend-val" id="bv-blinkL">0.00</span>
+      </div>
+      <div class="blend-row">
+        <span class="blend-label">eyeBlink_R</span>
+        <div class="blend-bar-bg"><div class="blend-bar" id="bs-blinkR" style="width:0%"></div></div>
+        <span class="blend-val" id="bv-blinkR">0.00</span>
+      </div>
+      <div class="blend-row">
+        <span class="blend-label">browRaise_L</span>
+        <div class="blend-bar-bg"><div class="blend-bar" id="bs-browL" style="width:0%"></div></div>
+        <span class="blend-val" id="bv-browL">0.00</span>
+      </div>
+      <div class="blend-row">
+        <span class="blend-label">browRaise_R</span>
+        <div class="blend-bar-bg"><div class="blend-bar" id="bs-browR" style="width:0%"></div></div>
+        <span class="blend-val" id="bv-browR">0.00</span>
+      </div>
+      <div class="blend-row">
+        <span class="blend-label">mouthSmile_L</span>
+        <div class="blend-bar-bg"><div class="blend-bar" id="bs-smileL" style="width:0%"></div></div>
+        <span class="blend-val" id="bv-smileL">0.00</span>
+      </div>
+      <div class="blend-row">
+        <span class="blend-label">mouthSmile_R</span>
+        <div class="blend-bar-bg"><div class="blend-bar" id="bs-smileR" style="width:0%"></div></div>
+        <span class="blend-val" id="bv-smileR">0.00</span>
+      </div>
+      <div class="blend-row">
+        <span class="blend-label">mouthOpen</span>
+        <div class="blend-bar-bg"><div class="blend-bar" id="bs-mouthOpen" style="width:0%"></div></div>
+        <span class="blend-val" id="bv-mouthOpen">0.00</span>
+      </div>
+      <!-- TEETH BLENDSHAPE -->
+      <div class="blend-row">
+        <span class="blend-label" style="color:#aaccee;">teethShow</span>
+        <div class="blend-bar-bg"><div class="blend-bar teeth-blend" id="bs-teeth" style="width:0%"></div></div>
+        <span class="blend-val teeth-blend-val" id="bv-teeth">0.00</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 4 Animated 3D Face -->
+  <div class="step-panel">
+    <div class="step-num">4</div>
+    <div class="step-title">Animated 3D Face</div>
+    <div class="step-sub">Real&#8209;time expression animation</div>
+    <div class="anim-wrapper">
+      <canvas id="animCanvas"></canvas>
+    </div>
+    <div class="expr-badge" id="exprBadge">&#8212; DETECTING &#8212;</div>
+    <div class="teeth-indicator" id="teethIndicator">
+      <div class="teeth-dot"></div>
+      <span class="teeth-label">TEETH DETECTION</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- Expression Examples -->
+<div class="expr-examples">
+  <div class="section-label">Expression Examples</div>
+  <div class="examples-grid">
+    <div class="expr-card" id="card-neutral">
+      <canvas id="demo-neutral"></canvas>
+      <div class="expr-name">Neutral</div>
+      <svg class="wave-svg" viewBox="0 0 60 14" fill="none">
+        <path d="M0 7 Q15 7 30 7 Q45 7 60 7" stroke="#00d4ff" stroke-width="1.2" opacity="0.6"/>
+      </svg>
+    </div>
+    <div class="expr-card" id="card-smile">
+      <canvas id="demo-smile"></canvas>
+      <div class="expr-name">Smile</div>
+      <svg class="wave-svg" viewBox="0 0 60 14" fill="none">
+        <path d="M0 7 Q10 3 20 7 Q30 11 40 7 Q50 3 60 7" stroke="#00d4ff" stroke-width="1.2" opacity="0.6"/>
+      </svg>
+    </div>
+    <div class="expr-card" id="card-surprised">
+      <canvas id="demo-surprised"></canvas>
+      <div class="expr-name">Surprised</div>
+      <svg class="wave-svg" viewBox="0 0 60 14" fill="none">
+        <path d="M0 7 Q5 2 10 7 Q15 12 20 7 Q25 2 30 7 Q35 12 40 7 Q45 2 50 7 Q55 12 60 7" stroke="#00d4ff" stroke-width="1.2" opacity="0.6"/>
+      </svg>
+    </div>
+    <div class="expr-card" id="card-angry">
+      <canvas id="demo-angry"></canvas>
+      <div class="expr-name">Angry</div>
+      <svg class="wave-svg" viewBox="0 0 60 14" fill="none">
+        <path d="M0 4 Q10 10 20 4 Q30 10 40 4 Q50 10 60 4" stroke="#00d4ff" stroke-width="1.2" opacity="0.6"/>
+      </svg>
+    </div>
+    <div class="expr-card" id="card-blink">
+      <canvas id="demo-blink"></canvas>
+      <div class="expr-name">Blink</div>
+      <svg class="wave-svg" viewBox="0 0 60 14" fill="none">
+        <path d="M0 7 Q15 7 25 7 L27 3 L29 11 L31 3 L33 7 Q45 7 60 7" stroke="#00d4ff" stroke-width="1.2" opacity="0.6"/>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-pipeline">
+    <div class="fp-step"><div class="fp-icon">&#128247;</div><div><div style="font-family:'Orbitron',sans-serif;font-size:7px;letter-spacing:1px">Webcam Input</div><div style="font-size:9px;color:var(--dim)">Video Frame</div></div></div>
+    <div class="fp-arrow">&#8594;</div>
+    <div class="fp-step"><div class="fp-icon">&#129504;</div><div><div style="font-family:'Orbitron',sans-serif;font-size:7px;letter-spacing:1px">Face + Teeth</div><div style="font-size:9px;color:var(--dim)">468 Landmarks</div></div></div>
+    <div class="fp-arrow">&#8594;</div>
+    <div class="fp-step"><div class="fp-icon">&#128202;</div><div><div style="font-family:'Orbitron',sans-serif;font-size:7px;letter-spacing:1px">Expression Analysis</div><div style="font-size:9px;color:var(--dim)">Parameters + Blendshapes</div></div></div>
+    <div class="fp-arrow">&#8594;</div>
+    <div class="fp-step"><div class="fp-icon">&#127917;</div><div><div style="font-family:'Orbitron',sans-serif;font-size:7px;letter-spacing:1px">3D Animation</div><div style="font-size:9px;color:var(--dim)">Live Avatar + Teeth</div></div></div>
+    <div class="fp-arrow">&#8594;</div>
+    <div class="fp-step"><div class="fp-icon">&#128187;</div><div><div style="font-family:'Orbitron',sans-serif;font-size:7px;letter-spacing:1px">Output</div><div style="font-size:9px;color:var(--dim)">Animated Face / Avatar</div></div></div>
+  </div>
+  <div class="footer-tagline">REAL EXPRESSIONS.<br/>TEETH DETECTION &amp; ANIMATION.</div>
+</footer>
+
+<!-- MediaPipe Dependencies -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+
+<!-- Application Modules -->
+<script src="js/geometry.js"></script>
+<script src="js/renderer.js"></script>
+<script src="js/tracker.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
