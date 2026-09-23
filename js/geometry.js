@@ -35,3 +35,43 @@ var HEAD_EDGES = (function () {
   }
   return e;
 })();
+
+/**
+ * Calculates facial feature transforms from normalized blendshape values
+ * @param {Object} bs - Active blendshape values
+ * @returns {Object} Feature coordinates and dimensions
+ */
+function makeFaceFeatures(bs) {
+  var blinkL = bs.blinkL, blinkR = bs.blinkR, eyeOpen = bs.eyeOpen;
+  var browRaise = bs.browRaise, browFurrow = bs.browFurrow;
+  var mouthOpen = bs.mouthOpen, smile = bs.smile, jawDrop = bs.jawDrop;
+  var teeth = bs.teeth;
+
+  return {
+    leftEye: {
+      cx: 0.22,
+      cy: 0.18,
+      ow: 0.12,
+      oh: Math.max(0.015, 0.06 * (1 - blinkL) * eyeOpen)
+    },
+    rightEye: {
+      cx: -0.22,
+      cy: 0.18,
+      ow: 0.12,
+      oh: Math.max(0.015, 0.06 * (1 - blinkR) * eyeOpen)
+    },
+    leftBrowY: 0.30 + browRaise * 0.08 - browFurrow * 0.04,
+    rightBrowY: 0.30 + browRaise * 0.08 - browFurrow * 0.04,
+    leftBrowTilt: -browFurrow * 0.03,
+    rightBrowTilt: browFurrow * 0.03,
+    mouth: {
+      cx: 0,
+      cy: -0.38 - jawDrop * 0.05,
+      w: 0.28 + smile * 0.08,
+      h: mouthOpen * 0.12
+    },
+    smileCurve: smile * 0.05,
+    teethVisible: teeth,
+    mouthOpen: mouthOpen
+  };
+}
