@@ -1,6 +1,6 @@
 /**
  * renderer.js
- * 3D Face Wireframe & Dynamic Feature Renderer - Eyes, Brows, Nose
+ * 3D Face Wireframe & Dynamic Feature Renderer
  */
 
 function FaceRenderer(canvas, color, bgColor, scale) {
