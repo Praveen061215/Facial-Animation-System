@@ -1,6 +1,6 @@
 /**
  * tracker.js
- * MediaPipe Face Mesh Landmark Analysis - EAR & Brow extraction, Blendshapes & Teeth Detection
+ * MediaPipe Face Mesh Landmark Analysis, Blendshapes & Teeth Detection
  */
 
 var LM = {
