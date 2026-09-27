@@ -1,6 +1,6 @@
 /**
  * app.js
- * Application Bootstrap, Event Listeners & Main Render Loop - 60 FPS Optimized
+ * Application Bootstrap - Live Webcam & Blendshape Smoothing - 60 FPS Optimized
  */
 
 var animCanvas = document.getElementById('animCanvas');
